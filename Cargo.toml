@@ -1,0 +1,8 @@
+[package]
+name = "cellular_automata"
+version = "0.1.0"
+authors = ["technolapin <technolapin@orange.fr>"]
+edition = "2018"
+
+[dependencies]
+multiarray = "*"

@@ -4,19 +4,6 @@ enum State
     On, Off, Bite
 }
 
-struct Automata
-{
-    width: usize,
-    height: usize,
-    grid: [multiarray::Array2D<State>; 2],
-    flag: usize,
-    neighbor: Vec<[i8; 2]>,
-    default_state: State
-    
-}
-
-
-
 impl State
 {
     fn default()-> State
@@ -36,14 +23,72 @@ impl State
 }
 
 
+fn transition_locale(neighbors_state: Vec<State>,
+                     current_state: &State) -> State
+{
+    let mut s = 0;
+    for cell in neighbors_state.iter()
+    {
+        match cell
+        {
+            State::On  => s=s+1,
+            _ => ()
+        }
+    }
+    if s == 3
+    {
+        State::On
+    }
+    else if s == 2
+    {
+        current_state.clone()
+    }
+    else if *current_state != State::Off
+    {
+        State::Bite
+    }
+    else
+    {
+        State::Off
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+struct Automata
+{
+    width: usize,
+    height: usize,
+    grid: [multiarray::Array2D<State>; 2],
+    flag: usize,
+    neighbor: Vec<[i8; 2]>,
+    default_state: State,
+    transition: fn(Vec<State>, &State) -> State
+}
+
+
+
+
+
+
 /**
-* Implementation of all the non-universal functions for 2D
-* (is to be changed if the automata's rules are changed)
+* Implementation of all the universal functions
+* (isn't to be changed)
 */
 impl Automata
 {
     fn new(width: usize,
-           height: usize) -> Automata
+           height: usize,
+           neighborhood: Vec<[i8; 2]>,
+           transition: fn(Vec<State>, &State) -> State) -> Automata
     {
         Automata
         {
@@ -54,55 +99,12 @@ impl Automata
                 multiarray::Array2D::new([width, height], State::default())
             ],
             flag: 0,
-            neighbor: vec![[-1, -1],[0, -1],[1, -1],
-                           [-1,  0],        [1 , 0],
-                           [-1,  1],[0,  1],[1 , 1]],
-            default_state: State::default()
+            neighbor: neighborhood,
+            default_state: State::default(),
+            transition: transition
         }
     }
 
-    
-    fn transition_locale(&mut self,
-                         x: usize,
-                         y: usize)
-    {
-        let mut s = 0;
-        for cell in self.neighborhood_states(x, y).iter()
-        {
-            match cell
-            {
-                State::On  => s=s+1,
-                _ => ()
-            }
-        }
-        self.set_next(x, y,
-                      if s == 3
-                      {
-                          State::On
-                      }
-                      else if s == 2
-                      {
-                          self.look_actual(x as isize, y as isize).clone()
-                      }
-                      else if *self.look_actual(x as isize, y as isize) != State::Off
-                      {
-                          State::Bite
-                      }
-                      else
-                      {
-                          State::Off
-                      }
-        );
-    }
-}
-
-
-/**
-* Implementation of all the universal functions
-* (isn't to be changed)
-*/
-impl Automata
-{
     fn look_actual(&self,
                   x: isize,
                   y: isize) -> &State
@@ -215,18 +217,33 @@ impl Automata
     {
         self.transition_globale();
         self.print();
-        for i in 0..self.width
+        for _ in 0..self.width
         {
             print!("{}", "#");
         }
         println!();
     }
+
+    fn transition_locale(&mut self,
+                         x: usize,
+                         y: usize)
+    {
+
+        
+        self.set_next(x, y, (self.transition)(
+            self.neighborhood_states(x, y),
+            self.look_actual(x as isize, y as isize) ));
+    }
 }
 
 
 
+
 fn main() {
-    let mut toto = Automata::new(20,10);
+    let mut toto = Automata::new(20,10, vec![[-1, -1],[0, -1],[1, -1],
+                                             [-1,  0],        [1 , 0],
+                                             [-1,  1],[0,  1],[1 , 1]],
+                                 transition_locale);
     toto.set_actual(0, 0, State::On);
     toto.set_actual(1, 1, State::On);
     toto.set_actual(1, 2, State::On);
