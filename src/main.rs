@@ -1,3 +1,6 @@
+mod grid;
+use self::grid::NDimSpace;
+
 #[derive(Clone, PartialEq)]
 enum State
 {
@@ -17,9 +20,10 @@ impl State
         {
             State::On  => "O",
             State::Off => " ",
-            State::Bite=> "·"
+            State::Bite => "·"
         }
     }
+    
 }
 
 
@@ -168,24 +172,6 @@ impl Automata
         }
         ngbr
     }
-
-    //NOT_NECESSARY
-    fn is_stationary(&self) -> bool
-    {
-        for x in 0..self.height
-        {
-            for y in 0..self.width
-            {
-                if self.look_actual(x as isize,
-                                    y as isize) != self.look_next(x as isize,
-                                                                  y as isize)
-                {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
     
     
     fn transition_globale(&mut self)
@@ -234,25 +220,159 @@ impl Automata
             self.neighborhood_states(x, y),
             self.look_actual(x as isize, y as isize) ));
     }
+
+    //NOT_NECESSARY
+    fn is_stationary(&self) -> bool
+    {
+        for x in 0..self.height
+        {
+            for y in 0..self.width
+            {
+                if self.look_actual(x as isize,
+                                    y as isize) != self.look_next(x as isize,
+                                                                  y as isize)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    fn clone_actual(&self) -> multiarray::Array2D<State>
+    {
+        let mut copy =  multiarray::Array2D::new([self.width, self.height], self.default_state.clone());
+        println!("{}", "avant les itérations");
+        for x in 0..self.width
+        {
+            for y in 0..self.height
+            {
+                println!("{} {} | {} {}", x, y, self.width, self.height);
+
+                copy[[x,y]] = self.look_actual(x as isize, y as isize).clone();
+            }
+        }
+        println!("{}", "end");
+        copy
+    }
+
+    fn actual_equals(&self, array: &multiarray::Array2D<State>) -> bool
+    {
+        for x in 0..self.height
+        {
+            for y in 0..self.width
+            {
+                if *self.look_actual(x as isize,
+                                    y as isize) != array[[x,y]]
+                {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+    
+    fn evolve_until_periodical(&mut self)
+    {
+        let mut etape: u64 = 0;
+        let mut periode: u64 = 1;
+        let mut image = self.clone_actual();
+        loop
+        {
+            periode = periode + 1;
+            for i in etape..(etape+periode)
+            {
+                if self.actual_equals(&image)
+                {
+                    return;
+                }
+                self.evolve();
+            }
+            image = self.clone_actual();
+            etape = etape + periode;
+        }
+    }
 }
 
 
 
 
-fn main() {
-    let mut toto = Automata::new(20,10, vec![[-1, -1],[0, -1],[1, -1],
+fn main()
+{
+    let mut toto = Automata::new(42,32, vec![[-1, -1],[0, -1],[1, -1],
                                              [-1,  0],        [1 , 0],
                                              [-1,  1],[0,  1],[1 , 1]],
                                  transition_locale);
-    toto.set_actual(0, 0, State::On);
-    toto.set_actual(1, 1, State::On);
-    toto.set_actual(1, 2, State::On);
-    toto.set_actual(2, 1, State::On);
-    toto.set_actual(2, 0, State::On);
-    toto.print();
+    toto.set_actual(5, 5, State::On);
+    toto.set_actual(6, 5, State::On);
+    toto.set_actual(5, 6, State::On);
+
+    toto.set_actual(17, 3, State::On);
+    toto.set_actual(18, 3, State::On);
+    toto.set_actual(16, 4, State::On);
+    toto.set_actual(15, 5, State::On);
+    toto.set_actual(15, 6, State::On);
+    toto.set_actual(15, 7, State::On);
+    toto.set_actual(16, 8, State::On);
+    toto.set_actual(17, 9, State::On);
+    toto.set_actual(18, 9, State::On);
+
+    toto.set_actual(19, 6, State::On);
+    toto.set_actual(20, 4, State::On);
+    toto.set_actual(20, 8, State::On);
+    toto.set_actual(21, 5, State::On);
+    toto.set_actual(21, 6, State::On);
+    toto.set_actual(21, 7, State::On);
+    toto.set_actual(22, 6, State::On);
+
+    toto.set_actual(25, 5, State::On);
+    toto.set_actual(26, 5, State::On);
+    toto.set_actual(25, 4, State::On);
+    toto.set_actual(26, 4, State::On);
+    toto.set_actual(25, 3, State::On);
+    toto.set_actual(26, 3, State::On);
     
+    toto.set_actual(27, 2, State::On);
+    toto.set_actual(27, 6, State::On);
+
+    toto.set_actual(29, 1, State::On);
+    toto.set_actual(29, 2, State::On);
+
+    toto.set_actual(29, 6, State::On);
+    toto.set_actual(29, 7, State::On);
+
+    toto.set_actual(39, 3, State::On);
+    toto.set_actual(39, 4, State::On);
+    toto.set_actual(40, 3, State::On);
+
+    
+    toto.print();
+   /*
     while !toto.is_stationary()
     {
         toto.evolve();
+}*/
+
+    //toto.evolve_until_periodical();
+
+    let mut spaace = NDimSpace::new(2); 
+
+    spaace.set(&[-1, -1], 1);
+    spaace.set(&[0, -1], 2);
+    spaace.set(&[1, -1], 3);
+
+    spaace.set(&[-1, 0], 4);
+    spaace.set(&[0, 0], 5);
+    spaace.set(&[1, 0], 6);
+
+    spaace.set(&[-1, 1], 7);
+    spaace.set(&[0, 1], 8);
+    spaace.set(&[1, 1], 9);
+
+    for line in -8..8 {
+        for column in -8..8 {
+            print!("{}", spaace.get(&[column, line]));
+        }
+        println!();
     }
 }
